@@ -1,0 +1,167 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template to create AWS AppStream 2.0 fleet and stack
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: PGE tags
+        Parameters:
+          - pStackCreator
+          - pAppId
+          - pNotify
+          - pOwner
+          - pEnv
+          - pDataClass
+          - pCompliance
+          - pCRIS
+      - Label:
+          default: Network configuration
+        Parameters:
+          - pVpcId
+          - pSubnet
+      - Label:
+          default: 'AppStream Fleet, Stack information'
+        Parameters:
+          - pASNamePrefix
+          - pASFleetInstances
+          - pASImgArn
+          - pASInstanceType
+          - pASFleetIdleTime
+          - pASFleetSessionDuration
+      - Label:
+          default: RDS cluster configuration
+        Parameters:
+          - pASRdsCluster
+      - Label:
+          default: AppStream Default Stack User information
+        Parameters:
+          - pASDefUserFirstName
+          - pASDefUserLastName
+          - pASDefUserEmail
+    ParameterLabels:
+      pStackCreator:
+        default: LAN ID of the stack creator
+      pAppId:
+        default: AppID from AMPS
+      pNotify:
+        default: Notification for system failure & maintenance
+      pOwner:
+        default: System or Asset Owner
+      pEnv:
+        default: Operating environment
+      pDataClass:
+        default: Data classification
+      pCompliance:
+        default: Compliance requirement
+      pCRIS:
+        default: CRIS
+      pVpcId:
+        default: VPC for security group creation
+      pSubnet:
+        default: Subnet ID for ImageBuilder VPC config
+      pASNamePrefix:
+        default: 'Fleet, Stack display name prefix'
+      pASFleetInstances:
+        default: Fleet Instances
+      pASFleetIdleTime:
+        default: Fleet idle disconnect time in seconds
+      pASFleetSessionDuration:
+        default: Fleet maximum session duration time in seconds
+      pASImgArn:
+        default: ARN of the public/private/shared AppStream Image
+      pASInstanceType:
+        default: Instance type for AppStream Fleet
+      pASRdsCluster:
+        default: RDS cluster configuration
+      pASDefUserFirstName:
+        default: AppStream Default Stack User First name
+      pASDefUserLastName:
+        default: AppStream Default Stack User Last name
+      pASDefUserEmail:
+        default: AppStream Default Stack User email
+Parameters:
+  pStackCreator:
+    Description: LAN ID of the stack creator
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9]*'
+    MaxLength: 4
+    MinLength: 4
+    Default: b1v6
+  pAppId:
+    Description: AppID from AMPS
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: /general/appid
+  pNotify:
+    Description: Notification for system failure & maintenance
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: /general/notify
+  pOwner:
+    Description: System or Asset Owner
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: /general/owner
+  pEnv:
+    Description: Operating environment
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: /general/environment
+  pDataClass:
+    Description: Data classification
+    Type: String
+    AllowedValues:
+      - Public
+      - Internal
+      - Confidential
+      - Restricted
+      - Privileged
+    Default: Internal
+  pCompliance:
+    Description: Compliance requirement
+    Type: String
+    AllowedValues:
+      - SOX
+      - NERC
+      - PII
+      - CCPA
+      - None
+    Default: None
+  pCRIS:
+    Description: CRIS
+    Type: String
+    AllowedValues:
+      - High
+      - Medium
+      - Low
+    Default: Low
+Resources:
+  rASFleetRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - appstream.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonAppStreamReadOnlyAccess'
+        - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
+        - 'arn:aws:iam::aws:policy/AmazonRDSReadOnlyAccess'
+      Tags:
+        - Key: AppID
+          Value: !Ref pAppId
+        - Key: Owner
+          Value: !Ref pOwner
+        - Key: Notify
+          Value: !Ref pNotify
+        - Key: Environment
+          Value: !Ref pEnv
+        - Key: DataClassification
+          Value: !Ref pDataClass
+        - Key: Compliance
+          Value: !Ref pCompliance
+        - Key: CRIS
+          Value: !Ref pCRIS
+        - Key: StackCreatedBy
+          Value: !Ref pStackCreator
